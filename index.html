@@ -1,0 +1,72 @@
+<html>
+<body>
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.4.5.min.js" type="text/javascript"></script>
+        <script>
+            var pubnub = new PubNub({
+                publishKey: "pub-c-7428e93b-3db5-419f-9c1e-a690f58c4f5d",
+                subscribeKey: "sub-c-ed76e9c4-715e-11e4-86a8-02ee2ddab7fe",
+                userId: "khayamuddin56@gmail.com"
+            });
+
+            // publish message
+            function publishMessage (message) {
+                // With the right payload, you can publish a message, add a reaction to a message,
+                // send a push notification, or send a small payload called a signal.
+                const publishPayload = {
+                    channel : "hello_world",
+                    message: {
+                        title: "greeting",
+                        description: message
+                    }
+                };
+                pubnub.publish(publishPayload);
+            }
+
+            const setupPubNub = () => {
+                // Update this block with your publish/subscribe keys
+                
+        
+                // add listener
+                const listener = {
+                    status: (statusEvent) => {
+                        if (statusEvent.category === "PNConnectedCategory") {
+                            console.log("Connected");
+                        }
+                    },
+                    message: (messageEvent) => {
+                        showMessage(messageEvent.message.description);
+                    },
+                    presence: (presenceEvent) => {
+                        // handle presence
+                    }
+                };
+                pubnub.addListener(listener);
+        
+                
+        
+                // subscribe to a channel
+                pubnub.subscribe({
+                    channels: ["hello_world"]
+                });
+            };
+        
+            window.onload = setupPubNub;
+            function start () {
+                publishMessage('start');
+            };
+			function stop () {
+                publishMessage('stop');
+            };
+        
+            const showMessage = (msg) => {
+                
+            };
+            
+
+        </script>
+        <div>
+            <button onclick="start()" rerender="dummy">Start</button>
+			<button onclick="stop()" rerender="dummy">Stop</button>
+        </div>
+</body>
+</html>
