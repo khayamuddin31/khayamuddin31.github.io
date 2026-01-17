@@ -150,11 +150,8 @@
         // Load available voices
         function loadVoices() {
             voices = window.speechSynthesis.getVoices();
-            const voiceSelect = document.getElementById('voiceSelect');
             const voiceStatus = document.getElementById('voiceStatus');
-            
-            voiceSelect.innerHTML = '';
-            
+                        
             if (voices.length === 0) {
                 voiceSelect.innerHTML = '<option value="">No voices available</option>';
                 voiceStatus.textContent = 'No voices found';
@@ -167,7 +164,6 @@
                 const option = document.createElement('option');
                 option.value = index;
                 option.textContent = `${voice.name} (${voice.lang})`;
-                voiceSelect.appendChild(option);
                 
                 // Prefer female English voices
                 if (voice.lang.startsWith('hi')) {
@@ -175,7 +171,6 @@
                 }
             });
             
-            voiceSelect.value = defaultVoiceIndex;
             selectedVoice = voices[defaultVoiceIndex];
             voiceStatus.textContent = `${selectedVoice.name} (${selectedVoice.lang})`;
             
@@ -367,4 +362,5 @@
     </div>
 </body>
 </html>
+
 
