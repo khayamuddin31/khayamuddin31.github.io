@@ -1,72 +1,381 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Divs - Click to Speak</title>
+    <style>
+        .word-box {
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            
+            /* Box dimensions */
+            width: 100px;
+            height: 100px;
+            
+            /* Font size */
+            font-size: 40px;
+            
+            /* Cursor to indicate clickable */
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .word-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .word-box:active {
+            transform: scale(0.98);
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+            gap: 15px;
+        }
+        
+        /* Style for active speaking tile */
+        .speaking {
+            outline: 4px solid yellow;
+            outline-offset: 2px;
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 20px yellow;
+            transform: scale(1.05);
+        }
+        
+        @keyframes pulse {
+            0% { outline-color: yellow; box-shadow: 0 0 20px yellow; }
+            50% { outline-color: orange; box-shadow: 0 0 25px orange; }
+            100% { outline-color: yellow; box-shadow: 0 0 20px yellow; }
+        }
+        
+        /* Control panel styling */
+        .controls {
+            text-align: center;
+            margin: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button#stopBtn {
+            background: #f44336;
+        }
+        
+        button#stopBtn:hover {
+            background: #d32f2f;
+        }
+        
+        .voice-selector {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        select {
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
 <body>
-<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.4.5.min.js" type="text/javascript"></script>
-        <script>
-            var pubnub = new PubNub({
-                publishKey: "pub-c-7428e93b-3db5-419f-9c1e-a690f58c4f5d",
-                subscribeKey: "sub-c-ed76e9c4-715e-11e4-86a8-02ee2ddab7fe",
-                userId: "khayamuddin56@gmail.com"
-            });
+    <h2 style="text-align: center; font-family: Arial; color: #333;">Click on any word to hear it spoken in a school girl voice</h2>
+    
+    <div class="controls">
+        <button id="voiceTestBtn">Test Voice</button>
+        <button id="stopBtn">Stop Speech</button>
+        <button id="readAllBtn">Read All Words</button>
+        <button id="readSlowBtn">Read All Slowly</button>
+        
+        <div class="voice-selector">
+            <div style="margin-bottom: 5px;">Select Voice:</div>
+            <select id="voiceSelect">
+                <option value="">Loading voices...</option>
+            </select>
+            <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                Current: <span id="voiceStatus">Loading...</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Divs will be generated here -->
+    </div>
 
-            // publish message
-            function publishMessage (message) {
-                // With the right payload, you can publish a message, add a reaction to a message,
-                // send a push notification, or send a small payload called a signal.
-                const publishPayload = {
-                    channel : "hello_world",
-                    message: {
-                        title: "greeting",
-                        description: message
-                    }
-                };
-                pubnub.publish(publishPayload);
+    <script>
+        const words = [
+            "He", "an", "to", "my", "I", "am", "is", "this", "by", "we",
+            "go", "a", "on", "it", "was", "the", "that", "up", "me", "so",
+            "and", "us", "she", "in", "you", "if", "do", "has", "or", "be",
+            "no", "are", "have", "at"
+        ];
+        
+        const container = document.querySelector('.container');
+        let selectedVoice = null;
+        let voices = [];
+        let isSpeaking = false;
+        let currentSpeakingTile = null;
+        let readAllQueue = [];
+        
+        // Function to generate random hex color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
             }
-
-            const setupPubNub = () => {
-                // Update this block with your publish/subscribe keys
+            return color;
+        }
+        
+        // Load available voices
+        function loadVoices() {
+            voices = window.speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById('voiceSelect');
+            const voiceStatus = document.getElementById('voiceStatus');
+            
+            voiceSelect.innerHTML = '';
+            
+            if (voices.length === 0) {
+                voiceSelect.innerHTML = '<option value="">No voices available</option>';
+                voiceStatus.textContent = 'No voices found';
+                return;
+            }
+            
+            // Find a good default female voice
+            let defaultVoiceIndex = 0;
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
                 
+                // Prefer female English voices
+                if (voice.lang.startsWith('en') && 
+                    (voice.name.toLowerCase().includes('female') || 
+                     voice.gender === 'female')) {
+                    defaultVoiceIndex = index;
+                }
+            });
+            
+            voiceSelect.value = defaultVoiceIndex;
+            selectedVoice = voices[defaultVoiceIndex];
+            voiceStatus.textContent = `${selectedVoice.name} (${selectedVoice.lang})`;
+            
+            // Auto-test the voice
+            setTimeout(() => {
+                if (!isSpeaking) {
+                    testVoice();
+                }
+            }, 500);
+        }
         
-                // add listener
-                const listener = {
-                    status: (statusEvent) => {
-                        if (statusEvent.category === "PNConnectedCategory") {
-                            console.log("Connected");
-                        }
-                    },
-                    message: (messageEvent) => {
-                        showMessage(messageEvent.message.description);
-                    },
-                    presence: (presenceEvent) => {
-                        // handle presence
-                    }
-                };
-                pubnub.addListener(listener);
+        // Test the voice
+        function testVoice() {
+            speakWord("Hello, I am ready", null, true);
+        }
         
-                
-        
-                // subscribe to a channel
-                pubnub.subscribe({
-                    channels: ["hello_world"]
-                });
-            };
-        
-            window.onload = setupPubNub;
-            function start () {
-                publishMessage('start');
-            };
-			function stop () {
-                publishMessage('stop');
-            };
-        
-            const showMessage = (msg) => {
-                
+        // Function to speak a word with proper timing
+        function speakWord(word, element = null, isTest = false) {
+            if (isSpeaking && !isTest) {
+                return; // Don't interrupt ongoing speech
+            }
+            
+            // Stop any current speech
+            window.speechSynthesis.cancel();
+            
+            // Remove highlight from previous tile
+            if (currentSpeakingTile) {
+                currentSpeakingTile.classList.remove('speaking');
+            }
+            
+            // Set current speaking tile
+            currentSpeakingTile = element;
+            
+            // Create speech synthesis
+            const speech = new SpeechSynthesisUtterance();
+            speech.text = word;
+            speech.volume = 1;
+            speech.rate = 0.9;
+            speech.pitch = 1.3; // Higher pitch for girl-like voice
+            speech.voice = selectedVoice;
+            
+            // Set flag and highlight BEFORE speech starts
+            isSpeaking = true;
+            if (element) {
+                element.classList.add('speaking');
+            }
+            
+            // Handle speech start
+            speech.onstart = () => {
+                console.log(`Started speaking: ${word}`);
             };
             
-
-        </script>
-        <div>
-            <button onclick="start()" rerender="dummy">Start</button>
-			<button onclick="stop()" rerender="dummy">Stop</button>
-        </div>
+            // Handle speech end
+            speech.onend = () => {
+                console.log(`Finished speaking: ${word}`);
+                isSpeaking = false;
+                if (element) {
+                    // Small delay before removing highlight for visual feedback
+                    setTimeout(() => {
+                        if (element === currentSpeakingTile) {
+                            element.classList.remove('speaking');
+                            currentSpeakingTile = null;
+                        }
+                    }, 200);
+                }
+                
+                // Process next word in queue if exists
+                if (readAllQueue.length > 0) {
+                    const next = readAllQueue.shift();
+                    setTimeout(() => {
+                        speakWord(next.word, next.element);
+                    }, 500); // Pause between words
+                }
+            };
+            
+            // Handle speech error
+            speech.onerror = (event) => {
+                console.error('Speech error:', event);
+                isSpeaking = false;
+                if (element) {
+                    element.classList.remove('speaking');
+                    currentSpeakingTile = null;
+                }
+            };
+            
+            // Start speech (with a small delay to ensure highlight is visible)
+            setTimeout(() => {
+                window.speechSynthesis.speak(speech);
+            }, 50);
+        }
+        
+        // Function to stop all speech
+        function stopSpeech() {
+            window.speechSynthesis.cancel();
+            isSpeaking = false;
+            readAllQueue = [];
+            
+            // Remove highlight from all tiles
+            document.querySelectorAll('.word-box').forEach(tile => {
+                tile.classList.remove('speaking');
+            });
+            currentSpeakingTile = null;
+        }
+        
+        // Function to read all words sequentially with proper timing
+        function readAllWords(slow = false) {
+            stopSpeech();
+            
+            const tiles = document.querySelectorAll('.word-box');
+            readAllQueue = [];
+            
+            // Build queue of words to speak
+            words.forEach((word, index) => {
+                readAllQueue.push({
+                    word: word,
+                    element: tiles[index]
+                });
+            });
+            
+            // Start speaking the first word
+            if (readAllQueue.length > 0) {
+                const first = readAllQueue.shift();
+                setTimeout(() => {
+                    speakWord(first.word, first.element);
+                }, slow ? 1000 : 300); // Longer delay for slow mode
+            }
+        }
+        
+        // Initialize
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        
+        // Initial load
+        setTimeout(loadVoices, 100);
+        
+        // Create 34 div elements
+        words.forEach((word, index) => {
+            const div = document.createElement('div');
+            div.className = 'word-box';
+            div.textContent = word;
+            div.style.backgroundColor = getRandomColor();
+            
+            // Add data attribute for easy reference
+            div.dataset.word = word;
+            div.dataset.index = index;
+            
+            // Add click event to speak the word
+            div.addEventListener('click', (event) => {
+                // Don't start new speech if we're in the middle of read-all
+                if (readAllQueue.length > 0) {
+                    stopSpeech();
+                }
+                speakWord(word, div);
+            });
+            
+            container.appendChild(div);
+        });
+        
+        // Voice selection change
+        document.getElementById('voiceSelect').addEventListener('change', (event) => {
+            const index = parseInt(event.target.value);
+            if (!isNaN(index) && voices[index]) {
+                selectedVoice = voices[index];
+                document.getElementById('voiceStatus').textContent = 
+                    `${selectedVoice.name} (${selectedVoice.lang})`;
+            }
+        });
+        
+        // Set up control buttons
+        document.getElementById('voiceTestBtn').addEventListener('click', testVoice);
+        document.getElementById('stopBtn').addEventListener('click', stopSpeech);
+        document.getElementById('readAllBtn').addEventListener('click', () => readAllWords(false));
+        document.getElementById('readSlowBtn').addEventListener('click', () => readAllWords(true));
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' || event.key === ' ') {
+                stopSpeech();
+            }
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopSpeech);
+    </script>
+    
+    <div style="text-align: center; margin-top: 20px; font-family: Arial; color: #666;">
+        <p>Click any word to hear it spoken in a school girl voice</p>
+        <p>Press <kbd>ESC</kbd> or <kbd>SPACE</kbd> to stop speech</p>
+        <p style="font-size: 12px; color: #999;">Highlight stays in sync with spoken word</p>
+    </div>
 </body>
 </html>
