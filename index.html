@@ -116,16 +116,6 @@
         <button id="stopBtn">Stop Speech</button>
         <button id="readAllBtn">Read All Words</button>
         <button id="readSlowBtn">Read All Slowly</button>
-        
-        <div class="voice-selector">
-            <div style="margin-bottom: 5px;">Select Voice:</div>
-            <select id="voiceSelect">
-                <option value="">Loading voices...</option>
-            </select>
-            <div style="margin-top: 10px; font-size: 14px; color: #666;">
-                Current: <span id="voiceStatus">Loading...</span>
-            </div>
-        </div>
     </div>
     
     <div class="container">
@@ -180,9 +170,7 @@
                 voiceSelect.appendChild(option);
                 
                 // Prefer female English voices
-                if (voice.lang.startsWith('en') && 
-                    (voice.name.toLowerCase().includes('female') || 
-                     voice.gender === 'female')) {
+                if (voice.lang.startsWith('hi')) {
                     defaultVoiceIndex = index;
                 }
             });
@@ -379,3 +367,4 @@
     </div>
 </body>
 </html>
+
