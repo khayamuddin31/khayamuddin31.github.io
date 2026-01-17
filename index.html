@@ -328,16 +328,6 @@
             container.appendChild(div);
         });
         
-        // Voice selection change
-        document.getElementById('voiceSelect').addEventListener('change', (event) => {
-            const index = parseInt(event.target.value);
-            if (!isNaN(index) && voices[index]) {
-                selectedVoice = voices[index];
-                document.getElementById('voiceStatus').textContent = 
-                    `${selectedVoice.name} (${selectedVoice.lang})`;
-            }
-        });
-        
         // Set up control buttons
         document.getElementById('voiceTestBtn').addEventListener('click', testVoice);
         document.getElementById('stopBtn').addEventListener('click', stopSpeech);
@@ -362,5 +352,6 @@
     </div>
 </body>
 </html>
+
 
 
